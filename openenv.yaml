@@ -1,0 +1,9 @@
+spec_version: 1
+name: model_release_env
+version: 0.1.0
+description: Deterministic release-readiness environment for LLM launches.
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
+default_image: model-release-env:latest

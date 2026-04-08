@@ -1,0 +1,10 @@
+fastapi>=0.115.0
+openai>=1.52.0
+openenv-core>=0.2.0
+pydantic>=2.7.0
+PyYAML>=6.0.0
+uvicorn>=0.30.0
+
+[dev]
+pytest>=8.3.0
+requests>=2.32.0

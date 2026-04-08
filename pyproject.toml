@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=69.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-model-release-env"
+version = "0.1.0"
+description = "OpenEnv environment for deterministic LLM release readiness tasks"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "openai>=1.52.0",
+  "openenv-core>=0.2.0",
+  "pydantic>=2.7.0",
+  "PyYAML>=6.0.0",
+  "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+  "requests>=2.32.0",
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[tool.setuptools]
+packages = ["model_release_env", "server"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+model_release_env = "."
+server = "server"
+
+[tool.setuptools.package-data]
+model_release_env = ["openenv.yaml", "README.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
