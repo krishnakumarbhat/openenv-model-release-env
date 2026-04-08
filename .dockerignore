@@ -1,8 +1,15 @@
 __pycache__
 .git
+.gitattributes
 .venv
 .pytest_cache
 dist
 build
 outputs
 tests
+.env
+.env.*
+*.pem
+*.key
+.vscode
+.idea

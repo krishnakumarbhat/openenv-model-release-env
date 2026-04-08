@@ -389,6 +389,9 @@ class ModelReleaseEnvironment(
         return [name for name, passed in self._score_by_check.items() if passed]
 
     def _build_observation(self, reward: float, done: bool) -> ModelReleaseObservation:
+        critical_gaps = [
+            name for name, satisfied in self._score_by_check.items() if not satisfied
+        ]
         return ModelReleaseObservation(
             task_name=self._task_name,
             difficulty=self._task_spec["difficulty"],
@@ -397,6 +400,7 @@ class ModelReleaseEnvironment(
             visible_documents=deepcopy(self._visible_documents),
             package_snapshot=deepcopy(self._package),
             checklist_status=deepcopy(self._score_by_check),
+            critical_gaps=critical_gaps,
             available_fields=list(self._task_spec["editable_fields"]),
             available_decisions=list(self._task_spec["allowed_decisions"]),
             inspected_documents=sorted(self._inspected_documents),

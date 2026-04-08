@@ -16,6 +16,8 @@ Model Release Env is an OpenEnv environment for release-readiness decisions arou
 
 The current offline heuristic smoke baseline scores `1.00` on all three tasks, for an average score of `1.00`.
 
+The environment now exposes `critical_gaps` in each observation so an agent can see which launch checks are still failing without reverse-engineering the full checklist.
+
 ## Why this is a real environment
 
 This is modeled on a real workflow used before shipping model checkpoints: confirm what can be published, align the release card with approved evidence, and block unsafe launches when compliance or safety signals fail. The environment is deterministic, fast to evaluate, and shaped for RL because every intermediate edit changes a measurable checklist score.
@@ -39,6 +41,8 @@ Each task exposes three evidence documents, a structured release package, and a 
 `set_decision`: set the release channel to `public`, `beta`, or `hold`.
 
 `submit`: finish the episode and receive the final score.
+
+Observations also include `critical_gaps`, a prioritized list of currently unsatisfied checks. This improves agent ergonomics and makes the environment more useful for RL agents that need dense tactical feedback.
 
 ## Reward Design
 
@@ -68,11 +72,15 @@ uv run server
 
 Open the local server at `http://localhost:8000/web`.
 
+If you prefer environment files, copy `.env.example` to `.env` locally. `.env` is ignored by git and docker to avoid leaking tokens.
+
 ## Docker
 
 ```bash
 docker build -t model-release-env:latest -f server/Dockerfile .
 ```
+
+For Hugging Face Docker Spaces, the repository also includes a root `Dockerfile` because Spaces looks for Docker entrypoints at repo root.
 
 ## Baseline Runner
 
@@ -93,6 +101,41 @@ Relevant variables:
 If `HF_TOKEN` is missing, `inference.py` uses a deterministic heuristic fallback so the project can still be smoke-tested offline.
 
 On machines with a polluted user-site Python installation, prefix local runs with `env -u PYTHONPATH` to prevent incompatible global packages from overriding the repo environment.
+
+The baseline runner redacts token-like strings from fallback error messages so model or transport failures do not echo secrets into logs.
+
+## Security
+
+- Keep tokens only in environment variables or an untracked `.env` file.
+- Never commit credentials. `.env*`, key files, editor metadata, and local build caches are ignored.
+- The Space upload contains only tracked project files; no local secrets or virtualenv artifacts are uploaded.
+- The baseline runner redacts token-like values in fallback logs.
+
+## Hugging Face Space
+
+Space URL: `https://huggingface.co/spaces/krishnah27/openenv-model-release-env`
+
+Public clone URL:
+
+```bash
+git clone https://huggingface.co/spaces/krishnah27/openenv-model-release-env
+```
+
+If you need authenticated push access from another machine, use the same clone URL and provide a Hugging Face write token as the git password when prompted.
+
+## Submission
+
+Submit these two URLs in the hackathon form:
+
+1. GitHub repository: `https://github.com/krishnakumarbhat/openenv-model-release-env`
+2. Hugging Face Space: `https://huggingface.co/spaces/krishnah27/openenv-model-release-env`
+
+Recommended final checklist before clicking submit:
+
+1. Open the GitHub repo and confirm the latest commit is present.
+2. Open the Hugging Face Space and confirm the Docker build starts or finishes successfully.
+3. Verify the root `inference.py` exists in both places.
+4. Submit the GitHub URL and Hugging Face Space URL.
 
 ## Example Client Usage
 

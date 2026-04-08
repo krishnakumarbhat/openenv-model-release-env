@@ -52,6 +52,10 @@ class ModelReleaseObservation(Observation):
         default_factory=dict,
         description="Progress on deterministic grader checks",
     )
+    critical_gaps: List[str] = Field(
+        default_factory=list,
+        description="Unsatisfied checks in priority order",
+    )
     available_fields: List[str] = Field(
         default_factory=list,
         description="Fields the agent may edit with set_field",

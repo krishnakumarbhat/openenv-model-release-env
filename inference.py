@@ -32,12 +32,27 @@ except ImportError:
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-HF_TOKEN = os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME", "model-release-env:latest")
 ENV_BASE_URL = os.getenv("ENV_BASE_URL")
 BENCHMARK = os.getenv("BENCHMARK_NAME", "model_release_env")
-MAX_STEPS = int(os.getenv("MODEL_RELEASE_MAX_STEPS", "8"))
-SUCCESS_THRESHOLD = float(os.getenv("MODEL_RELEASE_SUCCESS_THRESHOLD", "0.75"))
+
+
+def _get_env_int(name: str, default: str) -> int:
+    try:
+        return int(os.getenv(name, default))
+    except ValueError as exc:
+        raise SystemExit(f"Invalid integer for {name}: {exc}") from exc
+
+
+def _get_env_float(name: str, default: str) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except ValueError as exc:
+        raise SystemExit(f"Invalid float for {name}: {exc}") from exc
+
+
+MAX_STEPS = _get_env_int("MODEL_RELEASE_MAX_STEPS", "8")
+SUCCESS_THRESHOLD = _get_env_float("MODEL_RELEASE_SUCCESS_THRESHOLD", "0.75")
 
 DEFAULT_TASKS = [
     "card_completion_easy",
@@ -137,10 +152,18 @@ def _stderr(message: str) -> None:
     print(message, file=sys.stderr)
 
 
+def _redact_message(message: str) -> str:
+    redacted = re.sub(r"hf_[A-Za-z0-9]+", "hf_[REDACTED]", message)
+    redacted = re.sub(r"sk_[A-Za-z0-9]+", "sk_[REDACTED]", redacted)
+    redacted = re.sub(r"https://[^\s:@]+:[^\s@]+@", "https://[REDACTED]@", redacted)
+    return redacted
+
+
 def _llm_client() -> Optional[OpenAI]:
-    if not HF_TOKEN:
+    token = os.getenv("HF_TOKEN")
+    if not token:
         return None
-    return OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+    return OpenAI(base_url=API_BASE_URL, api_key=token)
 
 
 def _extract_json_block(content: str) -> Dict[str, Any]:
@@ -158,6 +181,7 @@ def _observation_prompt(observation: Any) -> str:
         "visible_documents": observation.visible_documents,
         "package_snapshot": observation.package_snapshot,
         "checklist_status": observation.checklist_status,
+        "critical_gaps": observation.critical_gaps,
         "available_fields": observation.available_fields,
         "available_decisions": observation.available_decisions,
         "inspected_documents": observation.inspected_documents,
@@ -201,6 +225,8 @@ def _model_action(
             {"role": "user", "content": user_prompt},
         ],
     )
+    if not response.choices:
+        raise ValueError("Model returned no choices")
     content = response.choices[0].message.content or ""
     return ModelReleaseAction(**_extract_json_block(content))
 
@@ -223,7 +249,9 @@ async def _run_task(env: ModelReleaseEnv, task_name: str, llm: Optional[OpenAI])
             else:
                 action = _model_action(llm, task_name, result.observation)
         except Exception as exc:
-            _stderr(f"planner fallback for {task_name}: {exc}")
+            _stderr(
+                f"planner fallback for {task_name}: {_redact_message(str(exc))}"
+            )
             action = _heuristic_action(task_name, step_index)
 
         result = await env.step(action)
