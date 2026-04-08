@@ -62,8 +62,7 @@ This gives dense partial credit while keeping grading fully programmatic.
 ## Local Development
 
 ```bash
-uv sync --extra dev
-env -u PYTHONPATH PYTHONNOUSERSITE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q
+uv sync
 uv run server
 ```
 
